@@ -1,9 +1,12 @@
-// entity-manager.js - Handle saving and loading entities
+// entity-manager.js - Handle saving and loading entities - FIXED VERSION
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize entity manager
   initEntityManager();
+  
+  // Add debug button (temporary, can be removed later)
+  addDebugButton();
 });
 
 async function initEntityManager() {
@@ -15,6 +18,22 @@ async function initEntityManager() {
   
   // Load saved entities
   await refreshEntityList();
+}
+
+function addDebugButton() {
+  // Add a debug button to list entities in console
+  const debugBtn = document.createElement('button');
+  debugBtn.textContent = 'Debug: List Entities';
+  debugBtn.style.marginLeft = '10px';
+  debugBtn.addEventListener('click', async () => {
+    const count = await rpgDB.debugListEntities();
+    alert(`Found ${count} entities in database. Check console for details.`);
+  });
+  
+  const actionsDiv = document.querySelector('.entity-actions');
+  if (actionsDiv) {
+    actionsDiv.appendChild(debugBtn);
+  }
 }
 
 async function saveCurrentEntity() {
@@ -36,6 +55,8 @@ async function saveCurrentEntity() {
     return;
   }
   
+  console.log(`Saving entity: ${name} (${type}), ID: ${entityId || 'new'}`);
+  
   // Create entity object
   const entity = {
     name,
@@ -51,15 +72,20 @@ async function saveCurrentEntity() {
   // If editing an existing entity, add the ID
   if (entityId) {
     entity.id = parseInt(entityId);
+    console.log(`Updating existing entity with ID: ${entity.id}`);
+  } else {
+    console.log('Creating new entity');
   }
   
   try {
     // Save to database
     const id = await rpgDB.saveEntity(entity);
+    console.log(`Entity saved with ID: ${id}`);
     
     // Update the form with the new ID if it was a new entity
     if (!entityId) {
       document.getElementById('entityId').value = id;
+      console.log(`Form updated with new ID: ${id}`);
     }
     
     // Update the entity list
@@ -79,6 +105,7 @@ async function refreshEntityList() {
   try {
     // Get all entities
     const entities = await rpgDB.getAllEntities();
+    console.log(`Refreshing entity list with ${entities.length} entities`);
     
     // Get the select element
     const select = document.getElementById('entityList');
@@ -100,6 +127,7 @@ async function refreshEntityList() {
         option.textContent = `${entity.name} (${entity.type})`;
         option.dataset.entityType = entity.type;
         select.appendChild(option);
+        console.log(`Added option for entity: ${entity.name}, ID: ${entity.id}`);
       });
     }
   } catch (error) {
@@ -114,6 +142,7 @@ function selectEntityInList(entityId) {
   for (let i = 0; i < options.length; i++) {
     if (options[i].value == entityId) {
       options[i].selected = true;
+      console.log(`Selected entity with ID: ${entityId} in list`);
       break;
     }
   }
@@ -125,6 +154,8 @@ async function loadSelectedEntity() {
   
   if (!entityId) return;
   
+  console.log(`Loading entity with ID: ${entityId}`);
+  
   try {
     // Get entity from database
     const entity = await rpgDB.getEntityById(parseInt(entityId));
@@ -133,6 +164,8 @@ async function loadSelectedEntity() {
       console.error(`Entity with ID ${entityId} not found.`);
       return;
     }
+    
+    console.log(`Loaded entity: ${entity.name}, type: ${entity.type}`);
     
     // Fill the form with entity data
     document.getElementById('entityId').value = entity.id;
@@ -154,6 +187,8 @@ async function loadSelectedEntity() {
 }
 
 function clearEntityForm() {
+  console.log('Clearing entity form');
+  
   // Clear form fields
   document.getElementById('entityId').value = '';
   document.getElementById('entityName').value = '';
@@ -183,9 +218,13 @@ async function deleteCurrentEntity() {
   
   const entityName = document.getElementById('entityName').value;
   
+  console.log(`Attempting to delete entity: ${entityName}, ID: ${entityId}`);
+  
   if (confirm(`Are you sure you want to delete "${entityName}"? This cannot be undone.`)) {
     try {
       await rpgDB.deleteEntity(parseInt(entityId));
+      console.log(`Entity with ID ${entityId} deleted`);
+      
       await refreshEntityList();
       clearEntityForm();
       alert(`Entity "${entityName}" deleted successfully!`);
