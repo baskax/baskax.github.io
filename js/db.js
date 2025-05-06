@@ -1,6 +1,3 @@
-// db.js - Database operations for the RPG Stat Calculator - FIXED VERSION
-
-// Initialize the database
 const dbPromise = initDatabase();
 
 async function initDatabase() {
