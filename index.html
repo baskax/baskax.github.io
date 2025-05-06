@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>RPG Stat Calculator</title>
   <!-- Include Chart.js for the graphs -->
+  <link rel="stylesheet" href="css/entity-manager.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { background:#111827; color:#f9fafb; font-family:sans-serif; padding:1rem; }
@@ -985,5 +986,47 @@
       refresh();
     });
   </script>
+  <!-- Add these before the closing </body> tag -->
+
+<!-- Include the database script -->
+<script src="js/db.js"></script>
+
+<!-- Include the entity manager script -->
+<script src="js/entity-manager.js"></script>
+
+<!-- This can be included in your existing HTML file -->
+<section id="entity-manager">
+  <h3>Entity Management</h3>
+  <div class="entity-form">
+    <input type="hidden" id="entityId">
+    
+    <div class="form-group">
+      <label for="entityName">Name:</label>
+      <input type="text" id="entityName" placeholder="Character Name">
+    </div>
+    
+    <div class="form-group">
+      <label for="entityType">Type:</label>
+      <select id="entityType">
+        <option value="player">Player</option>
+        <option value="enemy">Enemy</option>
+        <option value="npc">NPC</option>
+      </select>
+    </div>
+    
+    <div class="form-group entity-actions">
+      <button id="saveEntityBtn">Save Entity</button>
+      <button id="newEntityBtn">New Entity</button>
+      <button id="deleteEntityBtn">Delete Entity</button>
+    </div>
+  </div>
+  
+  <div class="saved-entities">
+    <h4>Saved Entities</h4>
+    <select id="entityList" size="5">
+      <option value="" disabled>No entities saved yet</option>
+    </select>
+  </div>
+</section>
 </body>
 </html>
