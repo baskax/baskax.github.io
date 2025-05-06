@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RPG Stat Calculator</title>
+  <!-- Include Chart.js for the graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background:#111827; color:#f9fafb; font-family:sans-serif; padding:1rem; }
+    input, table { margin:0.5rem 0; }
+    input { width:4rem; background:#1f2937; color:#f9fafb; border:none; border-radius:4px; padding:0.2rem; }
+    table { border-collapse:collapse; width:100%; }
+    th,td { padding:0.5rem; border:1px solid #334155; text-align:center; vertical-align:middle; }
+    th { background:#1f2937; }
+    tr:nth-child(even) { background:#1e293b; }
+    pre { background:#1f2937; padding:0.5rem; overflow-x:auto; }
+    section { margin-bottom:2rem; }
+    .formula { font-family:monospace; padding:0.5rem; background:#1f2937; margin-top:0.5rem; border-radius:4px; white-space:nowrap; overflow-x:auto; text-align:left; }
+    .graph-container { width:200px; height:100px; background:#1f2937; border-radius:4px; margin-top:0.5rem; cursor:pointer; position:relative; }
+    .graph-container:hover::after { content: '🔍 Click to expand'; position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; border-radius:4px; }
+    .graph-toggle { cursor:pointer; background:#374151; border:none; color:white; padding:0.3rem 0.6rem; border-radius:4px; margin-top:0.5rem; }
+    .graph-toggle:hover { background:#4b5563; }
+    .stat-row { display:flex; flex-direction:column; }
+    
+    /* Modal styles */
+    .modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }
+    .modal-content { background:#1f2937; padding:1rem; border-radius:8px; width:80%; max-width:800px; max-height:80vh; display:flex; flex-direction:column; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .modal-title { margin:0; font-size:1.5rem; }
+    .modal-close { background:transparent; border:none; color:#f9fafb; font-size:1.5rem; cursor:pointer; }
+    .modal-body { flex:1; overflow:auto; }
+    .expanded-graph-container { width:100%; height:400px; }
+
+    /* Tooltip styles */
+    .stat-label { position:relative; cursor:help; }
+    .stat-label:hover .tooltip { display:block; }
+    .tooltip { display:none; position:absolute; left:0; bottom:100%; background:#1f2937; color:#f9fafb; padding:0.75rem; border-radius:4px; width:250px; z-index:10; box-shadow:0 0 10px rgba(0,0,0,0.5); text-align:left; }
+    .tooltip h4 { margin:0 0 0.5rem 0; border-bottom:1px solid #4b5563; padding-bottom:0.25rem; }
+    .tooltip p { margin:0; font-size:0.85rem; }
+  </style>
+</head>
+<body>
+  <h2>Action-RPG Stat Calculator</h2>
+  <p>User: baskax | Last Updated: 2025-05-06 09:46:08 UTC</p>
+
+  <section>
+    <h3>1) Primary Attributes</h3>
+    <label class="stat-label">
+      POW <input type="number" id="pow" value="50" min="0"/>
+      <div class="tooltip">
+        <h4>Power</h4>
+        <p>Base physical strength – directly feeds your basic melee damage.</p>
+      </div>
+    </label>
+    <label class="stat-label">
+      DEX <input type="number" id="dex" value="50" min="0"/>
+      <div class="tooltip">
+        <h4>Dexterity</h4>
+        <p>Agility and precision – ups your attack-speed, evasion, and crit.</p>
+      </div>
+    </label>
+    <label class="stat-label">
+      VIT <input type="number" id="vit" value="50" min="0"/>
+      <div class="tooltip">
+        <h4>Vitality</h4>
+        <p>Raw sturdiness – determines your health pool (HP) and stamina (STA).</p>
+      </div>
+    </label>
+    <label class="stat-label">
+      FOC <input type="number" id="foc" value="50" min="0"/>
+      <div class="tooltip">
+        <h4>Focus</h4>
+        <p>Mental acuity – boosts skill damage, critical chance, and cooldown reduction.</p>
+      </div>
+    </label>
+    <label class="stat-label">
+      SPR <input type="number" id="spr" value="50" min="0"/>
+      <div class="tooltip">
+        <h4>Spirit</h4>
+        <p>Inner energy – fuels your energy/mana pool (ENG) and resistances.</p>
+      </div>
+    </label>
+  </section>
+
+  <section>
+    <h3>2) Config (live-edit weights & exponents)</h3>
+    <table id="configTable">
+      <thead>
+        <tr>
+          <th>Stat</th>
+          <th>w1</th>
+          <th>w2</th>
+          <th>pre</th>
+          <th>exp</th>
+          <th>mult</th>
+          <th>post</th>
+          <th style="width:25%">Formula & Graph</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-stat="HP">
+          <td class="stat-label">
+            HP
+            <div class="tooltip">
+              <h4>Health Points</h4>
+              <p>How much damage you can take before dying.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="HP_w1" value="1"/></td>
+          <td><input type="number" step="any" id="HP_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="HP_pre" value="0"/></td>
+          <td><input type="number" step="any" id="HP_exp" value="1.25"/></td>
+          <td><input type="number" step="any" id="HP_mult" value="5"/></td>
+          <td><input type="number" step="any" id="HP_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="HP_formula"></div>
+              <div class="graph-container" data-stat="HP"><canvas id="HP_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="HP">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="STA">
+          <td class="stat-label">
+            STA
+            <div class="tooltip">
+              <h4>Stamina</h4>
+              <p>Resource for dodges/sprints—how often you can evade or sprint.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="STA_w1" value="1"/></td>
+          <td><input type="number" step="any" id="STA_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="STA_pre" value="0"/></td>
+          <td><input type="number" step="any" id="STA_exp" value="1.15"/></td>
+          <td><input type="number" step="any" id="STA_mult" value="4"/></td>
+          <td><input type="number" step="any" id="STA_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="STA_formula"></div>
+              <div class="graph-container" data-stat="STA"><canvas id="STA_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="STA">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="ENG">
+          <td class="stat-label">
+            ENG
+            <div class="tooltip">
+              <h4>Energy</h4>
+              <p>Pool for skills/spells—how many abilities you can cast.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="ENG_w1" value="1"/></td>
+          <td><input type="number" step="any" id="ENG_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="ENG_pre" value="0"/></td>
+          <td><input type="number" step="any" id="ENG_exp" value="1.2"/></td>
+          <td><input type="number" step="any" id="ENG_mult" value="4"/></td>
+          <td><input type="number" step="any" id="ENG_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="ENG_formula"></div>
+              <div class="graph-container" data-stat="ENG"><canvas id="ENG_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="ENG">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="PDMG">
+          <td class="stat-label">
+            PDMG
+            <div class="tooltip">
+              <h4>Physical Damage</h4>
+              <p>Damage dealt by your standard melee or ranged attacks.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="PDMG_w1" value="1"/></td>
+          <td><input type="number" step="any" id="PDMG_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="PDMG_pre" value="0"/></td>
+          <td><input type="number" step="any" id="PDMG_exp" value="1.35"/></td>
+          <td><input type="number" step="any" id="PDMG_mult" value="3"/></td>
+          <td><input type="number" step="any" id="PDMG_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="PDMG_formula"></div>
+              <div class="graph-container" data-stat="PDMG"><canvas id="PDMG_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="PDMG">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="SKDMG">
+          <td class="stat-label">
+            SKDMG
+            <div class="tooltip">
+              <h4>Skill Damage</h4>
+              <p>Damage dealt by your special abilities or spells.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="SKDMG_w1" value="1"/></td>
+          <td><input type="number" step="any" id="SKDMG_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="SKDMG_pre" value="0"/></td>
+          <td><input type="number" step="any" id="SKDMG_exp" value="1.3"/></td>
+          <td><input type="number" step="any" id="SKDMG_mult" value="3"/></td>
+          <td><input type="number" step="any" id="SKDMG_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="SKDMG_formula"></div>
+              <div class="graph-container" data-stat="SKDMG"><canvas id="SKDMG_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="SKDMG">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="ASPD">
+          <td class="stat-label">
+            ASPD
+            <div class="tooltip">
+              <h4>Attack Speed</h4>
+              <p>Multiplier on your attack animation/swing speed (1.00 = baseline).</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="ASPD_w1" value="1"/></td>
+          <td><input type="number" step="any" id="ASPD_w2" value="0"/></td>
+          <td><input type="number" step="any" id="ASPD_pre" value="0"/></td>
+          <td><input type="number" step="any" id="ASPD_exp" value="1"/></td>
+          <td><input type="number" step="any" id="ASPD_mult" value="0.01"/></td>
+          <td><input type="number" step="any" id="ASPD_post" value="1"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="ASPD_formula"></div>
+              <div class="graph-container" data-stat="ASPD"><canvas id="ASPD_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="ASPD">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="CRIT">
+          <td class="stat-label">
+            CRIT%
+            <div class="tooltip">
+              <h4>Critical Chance %</h4>
+              <p>Chance for any attack or skill to hit for bonus (critical) damage.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="CRIT_w1" value="1"/></td>
+          <td><input type="number" step="any" id="CRIT_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="CRIT_pre" value="0"/></td>
+          <td><input type="number" step="any" id="CRIT_exp" value="1.25"/></td>
+          <td><input type="number" step="any" id="CRIT_mult" value="0.2"/></td>
+          <td><input type="number" step="any" id="CRIT_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="CRIT_formula"></div>
+              <div class="graph-container" data-stat="CRIT"><canvas id="CRIT_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="CRIT">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="ARM">
+          <td class="stat-label">
+            ARM
+            <div class="tooltip">
+              <h4>Armor</h4>
+              <p>Flat physical damage mitigation.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="ARM_w1" value="1"/></td>
+          <td><input type="number" step="any" id="ARM_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="ARM_pre" value="0"/></td>
+          <td><input type="number" step="any" id="ARM_exp" value="1.1"/></td>
+          <td><input type="number" step="any" id="ARM_mult" value="2"/></td>
+          <td><input type="number" step="any" id="ARM_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="ARM_formula"></div>
+              <div class="graph-container" data-stat="ARM"><canvas id="ARM_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="ARM">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="RES">
+          <td class="stat-label">
+            RES
+            <div class="tooltip">
+              <h4>Resistance</h4>
+              <p>Flat elemental/status resistance (fire, poison, stun-chance, etc.).</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="RES_w1" value="1"/></td>
+          <td><input type="number" step="any" id="RES_w2" value="0.25"/></td>
+          <td><input type="number" step="any" id="RES_pre" value="0"/></td>
+          <td><input type="number" step="any" id="RES_exp" value="1.1"/></td>
+          <td><input type="number" step="any" id="RES_mult" value="2"/></td>
+          <td><input type="number" step="any" id="RES_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="RES_formula"></div>
+              <div class="graph-container" data-stat="RES"><canvas id="RES_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="RES">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="CDR">
+          <td class="stat-label">
+            CDR%
+            <div class="tooltip">
+              <h4>Cooldown Reduction</h4>
+              <p>Percent reduction on all skill cooldown timers.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="CDR_w1" value="1"/></td>
+          <td><input type="number" step="any" id="CDR_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="CDR_pre" value="0"/></td>
+          <td><input type="number" step="any" id="CDR_exp" value="1.15"/></td>
+          <td><input type="number" step="any" id="CDR_mult" value="0.1"/></td>
+          <td><input type="number" step="any" id="CDR_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="CDR_formula"></div>
+              <div class="graph-container" data-stat="CDR"><canvas id="CDR_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="CDR">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-stat="MSPD">
+          <td class="stat-label">
+            MSPD%
+            <div class="tooltip">
+              <h4>Move Speed</h4>
+              <p>Percent bonus (or penalty) to your base movement speed.</p>
+            </div>
+          </td>
+          <td><input type="number" step="any" id="MSPD_w1" value="1"/></td>
+          <td><input type="number" step="any" id="MSPD_w2" value="0.5"/></td>
+          <td><input type="number" step="any" id="MSPD_pre" value="0"/></td>
+          <td><input type="number" step="any" id="MSPD_exp" value="1.1"/></td>
+          <td><input type="number" step="any" id="MSPD_mult" value="0.1"/></td>
+          <td><input type="number" step="any" id="MSPD_post" value="0"/></td>
+          <td>
+            <div class="stat-row">
+              <div class="formula" id="MSPD_formula"></div>
+              <div class="graph-container" data-stat="MSPD"><canvas id="MSPD_graph"></canvas></div>
+              <button class="graph-toggle" data-stat="MSPD">Toggle Primary Stat</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h3>3) Computed Secondaries</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Stat</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="secBody"></tbody>
+    </table>
+  </section>
+
+  <!-- Modal for expanded graph -->
+  <div id="graphModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Graph</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="expanded-graph-container">
+          <canvas id="expandedGraph"></canvas>
+        </div>
+        <div class="controls" style="display: flex; justify-content: space-between; margin-top: 1rem;">
+          <button id="expandedToggle" class="graph-toggle">Toggle Primary Stat</button>
+          <div>
+            <label for="rangeSlider">Range: </label>
+            <input type="range" id="rangeSlider" min="10" max="100" value="50" step="5">
+            <span id="rangeValue">50</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Store chart instances to destroy/recreate them
+    const chartInstances = {};
+    const expandedChartInstance = { chart: null, currentStat: null };
+    // Store which primary attribute to visualize (0 for first, 1 for second)
+    const statToggles = {};
+
+    function calcStat(name, p1, p2) {
+      const w1   = +document.getElementById(name + '_w1').value;
+      const w2   = +document.getElementById(name + '_w2').value;
+      const pre  = +document.getElementById(name + '_pre').value;
+      const exp  = +document.getElementById(name + '_exp').value;
+      const mult = +document.getElementById(name + '_mult').value;
+      const post = +document.getElementById(name + '_post').value;
+      const base = p1 * w1 + p2 * w2 + pre;
+      return Math.pow(base, exp) * mult + post;
+    }
+
+    function updateFormulas() {
+      const list = ['HP','STA','ENG','PDMG','SKDMG','ASPD','CRIT','ARM','RES','CDR','MSPD'];
+      const statNames = {
+        'HP': ['VIT', 'SPR'],
+        'STA': ['VIT', 'DEX'],
+        'ENG': ['SPR', 'FOC'],
+        'PDMG': ['POW', 'DEX'],
+        'SKDMG': ['FOC', 'POW'],
+        'ASPD': ['DEX', ''],
+        'CRIT': ['FOC', 'DEX'],
+        'ARM': ['VIT', 'POW'],
+        'RES': ['SPR', 'VIT'],
+        'CDR': ['FOC', 'SPR'],
+        'MSPD': ['DEX', 'SPR']
+      };
+
+      list.forEach(name => {
+        const w1   = +document.getElementById(name + '_w1').value;
+        const w2   = +document.getElementById(name + '_w2').value;
+        const pre  = +document.getElementById(name + '_pre').value;
+        const exp  = +document.getElementById(name + '_exp').value;
+        const mult = +document.getElementById(name + '_mult').value;
+        const post = +document.getElementById(name + '_post').value;
+
+        let formula = `${name} = `;
+        formula += `((${w1} × ${statNames[name][0]}`;
+        
+        if (w2 !== 0) {
+          formula += ` + ${w2} × ${statNames[name][1]}`;
+        }
+        
+        if (pre !== 0) {
+          formula += ` + ${pre}`;
+        }
+        
+        formula += `)^${exp} × ${mult}`;
+        
+        if (post !== 0) {
+          formula += ` + ${post}`;
+        }
+        
+        formula += `)`;
+        
+        document.getElementById(name + '_formula').textContent = formula;
+      });
+    }
+
+    function createOrUpdateChart(statName, primaryValues, secondaryValue, primaryAttr) {
+      const canvas = document.getElementById(statName + '_graph');
+      
+      // Destroy old chart if it exists
+      if (chartInstances[statName]) {
+        chartInstances[statName].destroy();
+      }
+
+      // Get stat mapping data
+      const statNames = {
+        'HP': ['VIT', 'SPR'],
+        'STA': ['VIT', 'DEX'],
+        'ENG': ['SPR', 'FOC'],
+        'PDMG': ['POW', 'DEX'],
+        'SKDMG': ['FOC', 'POW'],
+        'ASPD': ['DEX', ''],
+        'CRIT': ['FOC', 'DEX'],
+        'ARM': ['VIT', 'POW'],
+        'RES': ['SPR', 'VIT'],
+        'CDR': ['FOC', 'SPR'],
+        'MSPD': ['DEX', 'SPR']
+      };
+      
+      // Decide which primary attribute to show in the graph
+      const toggleIndex = statToggles[statName] || 0;
+      const primaryAttrName = statNames[statName][toggleIndex] || statNames[statName][0];
+      
+      // Generate graph data - 10 points centered around current value
+      const currentVal = primaryValues[toggleIndex];
+      const step = Math.max(5, Math.floor(currentVal / 5));
+      const startVal = Math.max(0, currentVal - (step * 5));
+      
+      const data = {
+        labels: [],
+        datasets: [{
+          label: statName,
+          data: [],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.4,
+          fill: true
+        }]
+      };
+      
+      // Generate data points
+      for (let i = 0; i <= 10; i++) {
+        const xValue = startVal + (i * step);
+        data.labels.push(xValue);
+        
+        // Calculate stat value with this attribute value
+        const tempPrimary = [...primaryValues];
+        tempPrimary[toggleIndex] = xValue;
+        
+        let p1 = 0, p2 = 0;
+        switch(statName) {
+          case 'HP':   p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'STA':  p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'ENG':  p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'PDMG': p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'SKDMG':p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'ASPD': p1 = xValue; p2 = 0; break;
+          case 'CRIT': p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'ARM':  p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'RES':  p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'CDR':  p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+          case 'MSPD': p1 = toggleIndex === 0 ? xValue : primaryValues[0]; p2 = toggleIndex === 1 ? xValue : primaryValues[1]; break;
+        }
+        
+        const val = calcStat(statName, p1, p2);
+        data.datasets[0].data.push(val);
+      }
+      
+      // Create new chart
+      chartInstances[statName] = new Chart(canvas, {
+        type: 'line',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: `${statName} vs ${primaryAttrName}`,
+              color: 'white',
+              font: {
+                size: 10
+              }
+            },
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return `${primaryAttrName}: ${tooltipItems[0].label}`;
+                },
+                label: function(tooltipItem) {
+                  return `${statName}: ${tooltipItem.raw.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: false
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#f9fafb',
+                maxRotation: 0,
+                display: false
+              }
+            },
+            y: {
+              title: {
+                display: false
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#f9fafb',
+                display: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createExpandedChart(statName, range = 50) {
+      const canvas = document.getElementById('expandedGraph');
+      const modal = document.getElementById('graphModal');
+      const modalTitle = document.getElementById('modalTitle');
+      
+      if (expandedChartInstance.chart) {
+        expandedChartInstance.chart.destroy();
+      }
+      
+      expandedChartInstance.currentStat = statName;
+      
+      // Get current primary values
+      const POW = +document.getElementById('pow').value;
+      const DEX = +document.getElementById('dex').value;
+      const VIT = +document.getElementById('vit').value;
+      const FOC = +document.getElementById('foc').value;
+      const SPR = +document.getElementById('spr').value;
+      
+      // Get primary values for this stat
+      let p1=0, p2=0;
+      switch(statName) {
+        case 'HP':   p1 = VIT; p2 = SPR; break;
+        case 'STA':  p1 = VIT; p2 = DEX; break;
+        case 'ENG':  p1 = SPR; p2 = FOC; break;
+        case 'PDMG': p1 = POW; p2 = DEX; break;
+        case 'SKDMG':p1 = FOC; p2 = POW; break;
+        case 'ASPD': p1 = DEX; p2 = 0; break;
+        case 'CRIT': p1 = FOC; p2 = DEX; break;
+        case 'ARM':  p1 = VIT; p2 = POW; break;
+        case 'RES':  p1 = SPR; p2 = VIT; break;
+        case 'CDR':  p1 = FOC; p2 = SPR; break;
+        case 'MSPD': p1 = DEX; p2 = SPR; break;
+      }
+      
+      const primaryValues = [p1, p2];
+      
+      // Get stat mapping data
+      const statNames = {
+        'HP': ['VIT', 'SPR'],
+        'STA': ['VIT', 'DEX'],
+        'ENG': ['SPR', 'FOC'],
+        'PDMG': ['POW', 'DEX'],
+        'SKDMG': ['FOC', 'POW'],
+        'ASPD': ['DEX', ''],
+        'CRIT': ['FOC', 'DEX'],
+        'ARM': ['VIT', 'POW'],
+        'RES': ['SPR', 'VIT'],
+        'CDR': ['FOC', 'SPR'],
+        'MSPD': ['DEX', 'SPR']
+      };
+      
+      // Map full names for title
+      const fullNames = {
+        'HP': 'Health Points',
+        'STA': 'Stamina',
+        'ENG': 'Energy',
+        'PDMG': 'Physical Damage',
+        'SKDMG': 'Skill Damage',
+        'ASPD': 'Attack Speed',
+        'CRIT': 'Critical Chance',
+        'ARM': 'Armor',
+        'RES': 'Resistance',
+        'CDR': 'Cooldown Reduction',
+        'MSPD': 'Movement Speed'
+      };
+      
+      const fullPrimaryNames = {
+        'POW': 'Power',
+        'DEX': 'Dexterity',
+        'VIT': 'Vitality',
+        'FOC': 'Focus',
+        'SPR': 'Spirit'
+      };
+      
+      // Decide which primary attribute to show in the graph
+      const toggleIndex = statToggles[statName] || 0;
+      const primaryAttrName = statNames[statName][toggleIndex] || statNames[statName][0];
+      const fullPrimaryName = fullPrimaryNames[primaryAttrName];
+      
+      // Update modal title
+      modalTitle.textContent = `${fullNames[statName]} vs ${fullPrimaryName}`;
+      
+      // Generate graph data - with more granular points
+      const currentVal = primaryValues[toggleIndex];
+      const halfRange = range / 2;
+      const step = Math.max(2, Math.floor(halfRange / 20)); // More granular steps
+      const startVal = Math.max(0, currentVal - halfRange);
+      const numPoints = Math.floor(range / step) + 1;
+      
+      const data = {
+        labels: [],
+        datasets: [{
+          label: statName,
+          data: [],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3
+        }]
+      };
+      
+      // Generate data points
+      for (let i = 0; i <= numPoints; i++) {
+        const xValue = startVal + (i * step);
+        data.labels.push(xValue);
+        
+        // Calculate stat value with this attribute value
+        let p1Calc = 0, p2Calc = 0;
+        switch(statName) {
+          case 'HP':   p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'STA':  p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'ENG':  p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'PDMG': p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'SKDMG':p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'ASPD': p1Calc = xValue; p2Calc = 0; break;
+          case 'CRIT': p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'ARM':  p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'RES':  p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'CDR':  p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+          case 'MSPD': p1Calc = toggleIndex === 0 ? xValue : p1; p2Calc = toggleIndex === 1 ? xValue : p2; break;
+        }
+        
+        const val = calcStat(statName, p1Calc, p2Calc);
+        data.datasets[0].data.push(val);
+      }
+      
+      // Create expanded chart
+      expandedChartInstance.chart = new Chart(canvas, {
+        type: 'line',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: `${fullNames[statName]} vs ${fullPrimaryName}`,
+              color: 'white',
+              font: {
+                size: 18
+              }
+            },
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return `${fullPrimaryName}: ${tooltipItems[0].label}`;
+                },
+                label: function(tooltipItem) {
+                  return `${fullNames[statName]}: ${tooltipItem.raw.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: fullPrimaryName,
+                color: '#f9fafb',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#f9fafb'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: fullNames[statName],
+                color: '#f9fafb',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#f9fafb'
+              }
+            }
+          }
+        }
+      });
+      
+      // Update the toggle button text
+      const altStatName = statNames[statName][1] || statNames[statName][0];
+      const altFullName = fullPrimaryNames[altStatName] || fullPrimaryNames[statNames[statName][0]];
+      document.getElementById('expandedToggle').textContent = `Show vs ${statToggles[statName] ? fullPrimaryNames[statNames[statName][0]] : altFullName}`;
+      
+      // Show the modal
+      modal.style.display = 'flex';
+    }
+
+    function refresh() {
+      const POW = +document.getElementById('pow').value;
+      const DEX = +document.getElementById('dex').value;
+      const VIT = +document.getElementById('vit').value;
+      const FOC = +document.getElementById('foc').value;
+      const SPR = +document.getElementById('spr').value;
+
+      const tbody = document.getElementById('secBody');
+      tbody.innerHTML = '';
+      const list = ['HP','STA','ENG','PDMG','SKDMG','ASPD','CRIT','ARM','RES','CDR','MSPD'];
+
+      list.forEach(name => {
+        let p1=0,p2=0;
+        switch(name) {
+          case 'HP':   p1 = VIT; p2 = SPR; break;
+          case 'STA':  p1 = VIT; p2 = DEX; break;
+          case 'ENG':  p1 = SPR; p2 = FOC; break;
+          case 'PDMG': p1 = POW; p2 = DEX; break;
+          case 'SKDMG':p1 = FOC; p2 = POW; break;
+          case 'ASPD': p1 = DEX; p2 = 0; break;
+          case 'CRIT': p1 = FOC; p2 = DEX; break;
+          case 'ARM':  p1 = VIT; p2 = POW; break;
+          case 'RES':  p1 = SPR; p2 = VIT; break;
+          case 'CDR':  p1 = FOC; p2 = SPR; break;
+          case 'MSPD': p1 = DEX; p2 = SPR; break;
+        }
+        const val = calcStat(name, p1, p2);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="stat-label">
+            ${name}
+            <div class="tooltip">
+              <h4>${getFullName(name)}</h4>
+              <p>${getDescription(name)}</p>
+            </div>
+          </td>
+          <td>${val.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+
+        // Create or update the chart for this stat
+        createOrUpdateChart(name, [p1, p2], val);
+      });
+
+      updateFormulas();
+      
+      // If expanded chart is open, update it too
+      if (expandedChartInstance.currentStat && 
+          document.getElementById('graphModal').style.display === 'flex') {
+        const range = +document.getElementById('rangeSlider').value;
+        createExpandedChart(expandedChartInstance.currentStat, range);
+      }
+    }
+
+    // Helper function to get full name of stat
+    function getFullName(statAbbr) {
+      const fullNames = {
+        'POW': 'Power',
+        'DEX': 'Dexterity',
+        'VIT': 'Vitality',
+        'FOC': 'Focus',
+        'SPR': 'Spirit',
+        'HP': 'Health Points',
+        'STA': 'Stamina',
+        'ENG': 'Energy',
+        'PDMG': 'Physical Damage',
+        'SKDMG': 'Skill Damage',
+        'ASPD': 'Attack Speed',
+        'CRIT': 'Critical Chance %',
+        'ARM': 'Armor',
+        'RES': 'Resistance',
+        'CDR': 'Cooldown Reduction',
+        'MSPD': 'Move Speed %'
+      };
+      return fullNames[statAbbr] || statAbbr;
+    }
+
+    // Helper function to get description of stat
+    function getDescription(statAbbr) {
+      const descriptions = {
+        'POW': 'Base physical strength – directly feeds your basic melee damage.',
+        'DEX': 'Agility and precision – ups your attack-speed, evasion, and crit.',
+        'VIT': 'Raw sturdiness – determines your health pool (HP) and stamina (STA).',
+        'FOC': 'Mental acuity – boosts skill damage, critical chance, and cooldown reduction.',
+        'SPR': 'Inner energy – fuels your energy/mana pool (ENG) and resistances.',
+        'HP': 'How much damage you can take before dying.',
+        'STA': 'Resource for dodges/sprints—how often you can evade or sprint.',
+        'ENG': 'Pool for skills/spells—how many abilities you can cast.',
+        'PDMG': 'Damage dealt by your standard melee or ranged attacks.',
+        'SKDMG': 'Damage dealt by your special abilities or spells.',
+        'ASPD': 'Multiplier on your attack animation/swing speed (1.00 = baseline).',
+        'CRIT': 'Chance for any attack or skill to hit for bonus (critical) damage.',
+        'ARM': 'Flat physical damage mitigation.',
+        'RES': 'Flat elemental/status resistance (fire, poison, stun-chance, etc.).',
+        'CDR': 'Percent reduction on all skill cooldown timers.',
+        'MSPD': 'Percent bonus (or penalty) to your base movement speed.'
+      };
+      return descriptions[statAbbr] || '';
+    }
+
+    // Toggle which primary attribute to graph
+    function setupToggleButtons() {
+      document.querySelectorAll('.graph-toggle').forEach(button => {
+        if (button.id === 'expandedToggle') {
+          button.addEventListener('click', function() {
+            if (expandedChartInstance.currentStat) {
+              const stat = expandedChartInstance.currentStat;
+              statToggles[stat] = statToggles[stat] === 1 ? 0 : 1;
+              const range = +document.getElementById('rangeSlider').value;
+              createExpandedChart(stat, range);
+            }
+          });
+        } else {
+          button.addEventListener('click', function() {
+            const stat = this.getAttribute('data-stat');
+            statToggles[stat] = statToggles[stat] === 1 ? 0 : 1;
+            
+            // Update button text
+            const statNames = {
+              'HP': ['VIT', 'SPR'],
+              'STA': ['VIT', 'DEX'],
+              'ENG': ['SPR', 'FOC'],
+              'PDMG': ['POW', 'DEX'],
+              'SKDMG': ['FOC', 'POW'],
+              'ASPD': ['DEX', ''],
+              'CRIT': ['FOC', 'DEX'],
+              'ARM': ['VIT', 'POW'],
+              'RES': ['SPR', 'VIT'],
+              'CDR': ['FOC', 'SPR'],
+              'MSPD': ['DEX', 'SPR']
+            };
+            
+            const newPrimary = statNames[stat][statToggles[stat]];
+            if (newPrimary) {
+              this.textContent = `Show vs ${newPrimary}`;
+              refresh(); // Redraw chart with new primary
+            }
+          });
+          
+          // Initial button text
+          const stat = button.getAttribute('data-stat');
+          const statNames = {
+            'HP': ['VIT', 'SPR'],
+            'STA': ['VIT', 'DEX'],
+            'ENG': ['SPR', 'FOC'],
+            'PDMG': ['POW', 'DEX'],
+            'SKDMG': ['FOC', 'POW'],
+            'ASPD': ['DEX', ''],
+            'CRIT': ['FOC', 'DEX'],
+            'ARM': ['VIT', 'POW'],
+            'RES': ['SPR', 'VIT'],
+            'CDR': ['FOC', 'SPR'],
+            'MSPD': ['DEX', 'SPR']
+          };
+          
+          const initialAttr = statNames[stat][0];
+          button.textContent = `Show vs ${statNames[stat][1] || initialAttr}`;
+        }
+      });
+    }
+
+    function setupExpandableGraphs() {
+      // Set up click handlers for graph containers
+      document.querySelectorAll('.graph-container').forEach(container => {
+        container.addEventListener('click', function() {
+          const statName = this.getAttribute('data-stat');
+          createExpandedChart(statName);
+        });
+      });
+      
+      // Set up modal close button
+      document.querySelector('.modal-close').addEventListener('click', function() {
+        document.getElementById('graphModal').style.display = 'none';
+      });
+      
+      // Close modal when clicking outside the content
+      document.getElementById('graphModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+          this.style.display = 'none';
+        }
+      });
+      
+      // Set up range slider
+      const rangeSlider = document.getElementById('rangeSlider');
+      const rangeValue = document.getElementById('rangeValue');
+      
+      rangeSlider.addEventListener('input', function() {
+        rangeValue.textContent = this.value;
+        if (expandedChartInstance.currentStat) {
+          createExpandedChart(expandedChartInstance.currentStat, +this.value);
+        }
+      });
+    }
+
+    document.querySelectorAll('input').forEach(i => i.addEventListener('input', refresh));
+    window.addEventListener('DOMContentLoaded', () => {
+      setupToggleButtons();
+      setupExpandableGraphs();
+      refresh();
+    });
+  </script>
+</body>
+</html>
