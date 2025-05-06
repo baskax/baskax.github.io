@@ -90,13 +90,46 @@ async function loadEntityById(id) {
       return null;
     }
     
-    // Calculate derived stats
-    const derivedStats = calculateCombatStats(entity);
+    // Import the existing calculation function from your stats calculator
+    // We assume that refresh() function updates global variables that we need to capture
     
-    // Return the entity with derived stats
+    // Create a temporary form with the entity's stats to use with your existing function
+    const originalPow = document.getElementById('pow').value;
+    const originalDex = document.getElementById('dex').value;
+    const originalVit = document.getElementById('vit').value;
+    const originalFoc = document.getElementById('foc').value;
+    const originalSpr = document.getElementById('spr').value;
+    
+    // Set the form with this entity's values
+    document.getElementById('pow').value = entity.pow;
+    document.getElementById('dex').value = entity.dex;
+    document.getElementById('vit').value = entity.vit;
+    document.getElementById('foc').value = entity.foc;
+    document.getElementById('spr').value = entity.spr;
+    
+    // Call your existing refresh function
+    refresh();
+    
+    // Capture all calculated stats from your page
+    const calculatedStats = captureCalculatedStats();
+    
+    // Reset the form to original values
+    document.getElementById('pow').value = originalPow;
+    document.getElementById('dex').value = originalDex;
+    document.getElementById('vit').value = originalVit;
+    document.getElementById('foc').value = originalFoc;
+    document.getElementById('spr').value = originalSpr;
+    
+    // Call refresh again to restore the original form values' calculations
+    refresh();
+    
+    // Return the entity with calculated stats
     return {
       ...entity,
-      ...derivedStats
+      ...calculatedStats,
+      // Add any additional properties needed for combat
+      currentHP: calculatedStats.hp,
+      maxHP: calculatedStats.hp
     };
   } catch (error) {
     console.error('Error loading entity:', error);
@@ -104,36 +137,31 @@ async function loadEntityById(id) {
   }
 }
 
-function calculateCombatStats(entity) {
-  // Calculate all combat-related stats based on primary attributes
-  const hp = Math.floor(entity.vit * 10 + entity.pow * 2);
-  const mp = Math.floor(entity.foc * 5 + entity.spr * 5);
-  const stamina = Math.floor(entity.vit * 3 + entity.dex * 2);
+// This function captures all the calculated stats from your page
+function captureCalculatedStats() {
+  // This function should extract all the calculated values from your HTML
+  // The exact implementation depends on how your stats page is structured
+  const stats = {};
   
-  const physAtk = Math.floor(entity.pow * 1.5 + entity.dex * 0.5);
-  const magAtk = Math.floor(entity.foc * 1.5 + entity.spr * 0.5);
+  // Example implementation - these should match your actual stat IDs
+  const statIds = [
+    'hp', 'mp', 'sta', 'eng',    // Resources
+    'pdmg', 'skdmg',             // Damage stats
+    'arm', 'res',                // Defense stats
+    'aspd', 'cspd',              // Speed stats
+    'crit', 'pen',               // Offensive stats
+    'srec', 'erec'               // Recovery stats
+  ];
   
-  const physDef = Math.floor(entity.vit * 0.8 + entity.pow * 0.2);
-  const magDef = Math.floor(entity.spr * 0.8 + entity.foc * 0.2);
+  // Extract each stat value from your UI
+  statIds.forEach(statId => {
+    const element = document.getElementById(statId);
+    if (element) {
+      stats[statId] = parseFloat(element.innerText || element.textContent);
+    }
+  });
   
-  const speed = Math.floor(entity.dex * 1.2);
-  const critRate = 5 + Math.floor(entity.dex * 0.1); // Base 5% + dex bonus
-  const evasion = Math.floor(entity.dex * 0.2);
-  const accuracy = Math.floor(80 + entity.dex * 0.2); // Base 80% + dex bonus
-  
-  return {
-    hp,
-    mp,
-    stamina,
-    physAtk,
-    magAtk,
-    physDef,
-    magDef,
-    speed,
-    critRate,
-    evasion,
-    accuracy
-  };
+  return stats;
 }
 
 function displayEntityStats(entity, containerId) {
@@ -144,6 +172,7 @@ function displayEntityStats(entity, containerId) {
     return;
   }
   
+  // Build HTML to show the entity's stats
   let html = `
     <h3>${entity.name}</h3>
     <div class="stat-group">
@@ -171,52 +200,114 @@ function displayEntityStats(entity, containerId) {
       <span class="stat-name">Spirit:</span> 
       <span class="stat-value">${entity.spr}</span>
     </div>
-    <h4>Combat Stats</h4>
-    <div class="stat-group">
-      <span class="stat-name">Health:</span> 
-      <span class="stat-value">${entity.hp}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Mana:</span> 
-      <span class="stat-value">${entity.mp}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Stamina:</span> 
-      <span class="stat-value">${entity.stamina}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Physical Attack:</span> 
-      <span class="stat-value">${entity.physAtk}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Magical Attack:</span> 
-      <span class="stat-value">${entity.magAtk}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Physical Defense:</span> 
-      <span class="stat-value">${entity.physDef}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Magical Defense:</span> 
-      <span class="stat-value">${entity.magDef}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Speed:</span> 
-      <span class="stat-value">${entity.speed}</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Critical Rate:</span> 
-      <span class="stat-value">${entity.critRate}%</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Evasion:</span> 
-      <span class="stat-value">${entity.evasion}%</span>
-    </div>
-    <div class="stat-group">
-      <span class="stat-name">Accuracy:</span> 
-      <span class="stat-value">${entity.accuracy}%</span>
-    </div>
   `;
+  
+  // Add calculated stats (using the actual names from your calculator)
+  html += `<h4>Combat Stats</h4>`;
+  
+  // Resources
+  if (entity.hp !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">HP:</span> 
+      <span class="stat-value">${entity.hp}</span>
+    </div>`;
+  }
+  
+  if (entity.mp !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">MP:</span> 
+      <span class="stat-value">${entity.mp}</span>
+    </div>`;
+  }
+  
+  if (entity.sta !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Stamina:</span> 
+      <span class="stat-value">${entity.sta}</span>
+    </div>`;
+  }
+  
+  if (entity.eng !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Energy:</span> 
+      <span class="stat-value">${entity.eng}</span>
+    </div>`;
+  }
+  
+  // Damage stats
+  if (entity.pdmg !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Physical Damage:</span> 
+      <span class="stat-value">${entity.pdmg}</span>
+    </div>`;
+  }
+  
+  if (entity.skdmg !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Skill Damage:</span> 
+      <span class="stat-value">${entity.skdmg}</span>
+    </div>`;
+  }
+  
+  // Defense stats
+  if (entity.arm !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Armor:</span> 
+      <span class="stat-value">${entity.arm}</span>
+    </div>`;
+  }
+  
+  if (entity.res !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Resistance:</span> 
+      <span class="stat-value">${entity.res}</span>
+    </div>`;
+  }
+  
+  // Speed stats
+  if (entity.aspd !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Attack Speed:</span> 
+      <span class="stat-value">${entity.aspd}</span>
+    </div>`;
+  }
+  
+  if (entity.cspd !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Cast Speed:</span> 
+      <span class="stat-value">${entity.cspd}</span>
+    </div>`;
+  }
+  
+  // Offensive stats
+  if (entity.crit !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Critical Rate:</span> 
+      <span class="stat-value">${entity.crit}%</span>
+    </div>`;
+  }
+  
+  if (entity.pen !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Penetration:</span> 
+      <span class="stat-value">${entity.pen}</span>
+    </div>`;
+  }
+  
+  // Recovery stats
+  if (entity.srec !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Stamina Recovery:</span> 
+      <span class="stat-value">${entity.srec}</span>
+    </div>`;
+  }
+  
+  if (entity.erec !== undefined) {
+    html += `<div class="stat-group">
+      <span class="stat-name">Energy Recovery:</span> 
+      <span class="stat-value">${entity.erec}</span>
+    </div>`;
+  }
   
   container.innerHTML = html;
 }
@@ -247,15 +338,17 @@ function simulateCombat(entity1, entity2, maxRounds) {
   const combatant1 = {
     ...entity1,
     currentHP: entity1.hp,
-    currentMP: entity1.mp,
-    currentStamina: entity1.stamina
+    currentMP: entity1.mp || 0,
+    currentStamina: entity1.sta || 0,
+    currentEnergy: entity1.eng || 0
   };
   
   const combatant2 = {
     ...entity2,
     currentHP: entity2.hp,
-    currentMP: entity2.mp,
-    currentStamina: entity2.stamina
+    currentMP: entity2.mp || 0,
+    currentStamina: entity2.sta || 0,
+    currentEnergy: entity2.eng || 0
   };
   
   const results = {
@@ -268,8 +361,9 @@ function simulateCombat(entity1, entity2, maxRounds) {
     hpHistory: { [entity1.name]: [entity1.hp], [entity2.name]: [entity2.hp] }
   };
   
-  // Determine who goes first based on speed
-  const entity1First = combatant1.speed >= combatant2.speed;
+  // Determine who goes first based on attack speed (aspd)
+  // Use your actual speed stat here
+  const entity1First = (combatant1.aspd || 0) >= (combatant2.aspd || 0);
   
   // Combat rounds
   for (let round = 1; round <= maxRounds; round++) {
@@ -323,13 +417,18 @@ function simulateCombat(entity1, entity2, maxRounds) {
       break;
     }
     
-    // Recover some stamina each round
-    combatant1.currentStamina = Math.min(combatant1.stamina, combatant1.currentStamina + 5);
-    combatant2.currentStamina = Math.min(combatant2.stamina, combatant2.currentStamina + 5);
+    // Recover resources after each round
+    // Use your actual recovery stats (srec, erec) if they exist
+    const staminaRec1 = combatant1.srec || (combatant1.sta * 0.1);
+    const staminaRec2 = combatant2.srec || (combatant2.sta * 0.1);
+    const energyRec1 = combatant1.erec || (combatant1.eng * 0.05);
+    const energyRec2 = combatant2.erec || (combatant2.eng * 0.05);
     
-    // Recover some MP each round
-    combatant1.currentMP = Math.min(combatant1.mp, combatant1.currentMP + 3);
-    combatant2.currentMP = Math.min(combatant2.mp, combatant2.currentMP + 3);
+    combatant1.currentStamina = Math.min(combatant1.sta || 0, (combatant1.currentStamina || 0) + staminaRec1);
+    combatant2.currentStamina = Math.min(combatant2.sta || 0, (combatant2.currentStamina || 0) + staminaRec2);
+    
+    combatant1.currentEnergy = Math.min(combatant1.eng || 0, (combatant1.currentEnergy || 0) + energyRec1);
+    combatant2.currentEnergy = Math.min(combatant2.eng || 0, (combatant2.currentEnergy || 0) + energyRec2);
     
     // Add round result to results
     results.rounds.push(roundResult);
@@ -370,80 +469,75 @@ function simulateCombat(entity1, entity2, maxRounds) {
 }
 
 function performAttack(attacker, defender, round) {
-  // Determine attack type (physical or magical)
-  // For simplicity, we'll use physical attacks if stamina is sufficient
-  // and magical attacks otherwise
+  // Using your existing stats for combat calculations
   
-  let attackType, attackStat, defenseStat, attackCost;
-  let attackDescription, attackName;
+  // Determine attack type based on available resources
+  let attackType, damage, attackCost;
+  let attackName, attackDescription, resourceType;
   
-  if (attacker.currentStamina >= 10) {
+  // Default values in case some stats are missing
+  const pdmg = attacker.pdmg || 0;
+  const skdmg = attacker.skdmg || 0;
+  const arm = defender.arm || 0;
+  const res = defender.res || 0;
+  const critRate = attacker.crit || 5;
+  const pen = attacker.pen || 0;
+  
+  if ((attacker.currentStamina || 0) >= 10) {
+    // Physical attack
     attackType = 'physical';
-    attackStat = attacker.physAtk;
-    defenseStat = defender.physDef;
-    attackCost = 10; // Stamina cost
     attackName = 'Physical Attack';
     attackDescription = `${attacker.name} attacks ${defender.name} physically`;
-  } else if (attacker.currentMP >= 15) {
-    attackType = 'magical';
-    attackStat = attacker.magAtk;
-    defenseStat = defender.magDef;
-    attackCost = 15; // MP cost
-    attackName = 'Magical Attack';
-    attackDescription = `${attacker.name} casts a spell on ${defender.name}`;
+    resourceType = 'Stamina';
+    attackCost = 10;
+    
+    // Calculate physical damage using your stat formulas
+    // Apply penetration if it exists
+    const effectiveArmor = Math.max(0, arm - pen);
+    damage = calculatePhysicalDamage(pdmg, effectiveArmor);
+    
+    // Reduce stamina
+    attacker.currentStamina -= attackCost;
+  } else if ((attacker.currentEnergy || 0) >= 15) {
+    // Skill attack
+    attackType = 'skill';
+    attackName = 'Skill Attack';
+    attackDescription = `${attacker.name} uses a skill on ${defender.name}`;
+    resourceType = 'Energy';
+    attackCost = 15;
+    
+    // Calculate skill damage using your stat formulas
+    damage = calculateSkillDamage(skdmg, res);
+    
+    // Reduce energy
+    attacker.currentEnergy -= attackCost;
   } else {
-    // Weak attack when both resources are depleted
+    // Weak attack when resources are depleted
     attackType = 'weak';
-    attackStat = Math.max(attacker.physAtk, attacker.magAtk) * 0.5;
-    defenseStat = Math.max(defender.physDef, defender.magDef);
-    attackCost = 0;
     attackName = 'Weak Attack';
     attackDescription = `${attacker.name} makes a weak attack against ${defender.name}`;
+    resourceType = 'None';
+    attackCost = 0;
+    
+    // Weak attack deals half damage
+    damage = calculatePhysicalDamage(pdmg * 0.5, arm);
   }
   
-  // Reduce resources
-  if (attackType === 'physical') {
-    attacker.currentStamina -= attackCost;
-  } else if (attackType === 'magical') {
-    attacker.currentMP -= attackCost;
-  }
-  
-  // Calculate hit chance
-  const hitChance = attacker.accuracy - defender.evasion;
-  const hit = Math.random() * 100 < hitChance;
-  
-  if (!hit) {
-    return {
-      attacker: attacker.name,
-      defender: defender.name,
-      attackType,
-      damage: 0,
-      hit: false,
-      critical: false,
-      description: `${attacker.name}'s ${attackName} missed!`,
-      defenderHP: defender.currentHP,
-      defenderMaxHP: defender.hp
-    };
-  }
-  
-  // Check for critical hit
-  const critical = Math.random() * 100 < attacker.critRate;
-  
-  // Calculate base damage
-  let damage = attackStat - (defenseStat * 0.5);
-  
-  // Add randomness (90% - 110% of base damage)
+  // Add randomness (90% - 110% of calculated damage)
   damage = damage * (0.9 + Math.random() * 0.2);
   
-  // Apply critical multiplier
+  // Check for critical hit using the entity's crit stat
+  const critical = Math.random() * 100 < critRate;
+  
+  // Apply critical damage bonus
   if (critical) {
     damage *= 1.5;
   }
   
-  // Add slight round bonus to escalate damage over time (prevents stalemates)
+  // Add slight round bonus to escalate damage over time
   damage *= (1 + round * 0.01);
   
-  // Ensure minimum damage
+  // Ensure minimum damage of 1
   damage = Math.max(1, Math.floor(damage));
   
   // Apply damage
@@ -457,17 +551,37 @@ function performAttack(attacker, defender, round) {
   }
   desc += ` for ${damage} damage`;
   
+  if (attackCost > 0) {
+    desc += ` (${resourceType}: -${attackCost})`;
+  }
+  
   return {
     attacker: attacker.name,
     defender: defender.name,
     attackType,
     damage,
-    hit: true,
     critical,
     description: desc,
     defenderHP: defender.currentHP,
-    defenderMaxHP: defender.hp
+    defenderMaxHP: defender.hp,
+    resourceUsed: resourceType,
+    resourceCost: attackCost
   };
+}
+
+// Helper functions that use your stat formulas
+function calculatePhysicalDamage(attackStat, defenseStat) {
+  // This should match your formula for physical damage calculation
+  // Example: Diminishing returns on defense
+  const damageReduction = defenseStat / (defenseStat + 100);
+  return attackStat * (1 - damageReduction);
+}
+
+function calculateSkillDamage(attackStat, defenseStat) {
+  // This should match your formula for skill damage calculation
+  // Example: Resistance reduces damage less effectively than armor
+  const damageReduction = defenseStat / (defenseStat + 150);
+  return attackStat * (1 - damageReduction);
 }
 
 function displayCombatResults(results) {
@@ -478,13 +592,13 @@ function displayCombatResults(results) {
   if (results.winner) {
     summaryDiv.innerHTML = `
       <p><span class="winner">${results.winnerName}</span> defeated ${results.loserName} in ${rounds} round${rounds > 1 ? 's' : ''}!</p>
-      <p>Total damage dealt: ${results.winner.name}: ${results.totalDamage[results.winner.name]} | ${results.loserName}: ${results.totalDamage[results.loserName]}</p>
+      <p>Total damage dealt: ${results.winner.name}: ${results.totalDamage[results.winner.name].toFixed(0)} | ${results.loserName}: ${results.totalDamage[results.loserName].toFixed(0)}</p>
       <p>Critical hits: ${results.winner.name}: ${results.criticalHits[results.winner.name]} | ${results.loserName}: ${results.criticalHits[results.loserName]}</p>
     `;
   } else {
     summaryDiv.innerHTML = `
       <p>The battle ended in a draw after ${rounds} rounds!</p>
-      <p>Total damage dealt: ${entity1.name}: ${results.totalDamage[entity1.name]} | ${entity2.name}: ${results.totalDamage[entity2.name]}</p>
+      <p>Total damage dealt: ${entity1.name}: ${results.totalDamage[entity1.name].toFixed(0)} | ${entity2.name}: ${results.totalDamage[entity2.name].toFixed(0)}</p>
       <p>Critical hits: ${entity1.name}: ${results.criticalHits[entity1.name]} | ${entity2.name}: ${results.criticalHits[entity2.name]}</p>
     `;
   }
@@ -500,18 +614,11 @@ function displayCombatResults(results) {
     let roundHtml = `<div class="round-title">Round ${round.round}</div>`;
     
     round.actions.forEach(action => {
-      if (action.hit) {
-        roundHtml += `<div class="attack">
-          ${action.critical ? '<span class="critical">CRITICAL! </span>' : ''}
-          ${action.attacker} used ${action.attackType} attack and dealt 
-          <span class="damage">${action.damage}</span> damage to ${action.defender}. 
-          <span class="health">${action.defender} HP: ${action.defenderHP}/${action.defenderMaxHP}</span>
-        </div>`;
-      } else {
-        roundHtml += `<div class="attack">
-          ${action.attacker}'s attack missed!
-        </div>`;
-      }
+      roundHtml += `<div class="attack">
+        ${action.critical ? '<span class="critical">CRITICAL! </span>' : ''}
+        ${action.description}. 
+        <span class="health">${action.defender} HP: ${Math.max(0, action.defenderHP).toFixed(0)}/${action.defenderMaxHP}</span>
+      </div>`;
     });
     
     roundDiv.innerHTML = roundHtml;
@@ -610,40 +717,65 @@ function displayStatComparison() {
     statComparisonChart.destroy();
   }
   
-  // Prepare data for radar chart
-  const stats = [
-    'physAtk',
-    'magAtk',
-    'physDef',
-    'magDef',
-    'speed',
-    'hp',
-    'mp'
-  ];
+  // Determine which stats to compare based on what's available
+  // These should match your actual stat names
+  const availableStats = [];
+  const statLabels = [];
   
-  const statNames = [
-    'Phys Attack',
-    'Mag Attack',
-    'Phys Defense',
-    'Mag Defense',
-    'Speed',
-    'Health',
-    'Mana'
-  ];
+  // Check which stats both entities have
+  if (entity1.pdmg !== undefined && entity2.pdmg !== undefined) {
+    availableStats.push('pdmg');
+    statLabels.push('Physical DMG');
+  }
+  
+  if (entity1.skdmg !== undefined && entity2.skdmg !== undefined) {
+    availableStats.push('skdmg');
+    statLabels.push('Skill DMG');
+  }
+  
+  if (entity1.arm !== undefined && entity2.arm !== undefined) {
+    availableStats.push('arm');
+    statLabels.push('Armor');
+  }
+  
+  if (entity1.res !== undefined && entity2.res !== undefined) {
+    availableStats.push('res');
+    statLabels.push('Resistance');
+  }
+  
+  if (entity1.hp !== undefined && entity2.hp !== undefined) {
+    availableStats.push('hp');
+    statLabels.push('Health');
+  }
+  
+  if (entity1.aspd !== undefined && entity2.aspd !== undefined) {
+    availableStats.push('aspd');
+    statLabels.push('Attack Speed');
+  }
+  
+  if (entity1.crit !== undefined && entity2.crit !== undefined) {
+    availableStats.push('crit');
+    statLabels.push('Critical Rate');
+  }
   
   // Normalize values for better chart visualization
   const maxValues = {};
-  stats.forEach(stat => {
-    maxValues[stat] = Math.max(entity1[stat], entity2[stat]);
+  availableStats.forEach(stat => {
+    maxValues[stat] = Math.max(entity1[stat] || 0, entity2[stat] || 0);
   });
   
-  const entity1Values = stats.map(stat => (entity1[stat] / maxValues[stat]) * 100);
-  const entity2Values = stats.map(stat => (entity2[stat] / maxValues[stat]) * 100);
+  const entity1Values = availableStats.map(stat => {
+    return maxValues[stat] > 0 ? ((entity1[stat] || 0) / maxValues[stat]) * 100 : 0;
+  });
+  
+  const entity2Values = availableStats.map(stat => {
+    return maxValues[stat] > 0 ? ((entity2[stat] || 0) / maxValues[stat]) * 100 : 0;
+  });
   
   statComparisonChart = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: statNames,
+      labels: statLabels,
       datasets: [
         {
           label: entity1.name,
