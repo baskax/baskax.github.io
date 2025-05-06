@@ -592,7 +592,7 @@ function displayHPChart(results) {
         {
           label: `${entity1Name} HP`,
           data: results.hpHistory[entity1Name],
-          borderColor: 'rgba(75, 192, 192, 1)',
+          borderColor: 'rgba(75, 192, 192, 1)', // Teal color - keep this
           backgroundColor: 'rgba(75, 192, 192, 0.2)',
           tension: 0.1,
           fill: true
@@ -600,7 +600,7 @@ function displayHPChart(results) {
         {
           label: `${entity2Name} HP`,
           data: results.hpHistory[entity2Name],
-          borderColor: 'rgba(255, 99, 132, 1)',
+          borderColor: 'rgba(255, 99, 132, 1)', // Pink color - keep this
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
           tension: 0.1,
           fill: true
@@ -614,30 +614,30 @@ function displayHPChart(results) {
         title: {
           display: true,
           text: 'HP over Combat Rounds',
-          color: '#f9fafb'
+          color: '#333333' // Changed to dark text
         },
         legend: {
           labels: {
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           }
         }
       },
       scales: {
         x: {
           ticks: {
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid lines
           }
         },
         y: {
           beginAtZero: true,
           ticks: {
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid lines
           }
         }
       }
@@ -693,14 +693,14 @@ function displayStatComparison() {
         {
           label: entity1.name,
           data: entity1Data,
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)', // Keep teal color
           borderColor: 'rgba(75, 192, 192, 1)',
           pointBackgroundColor: 'rgba(75, 192, 192, 1)'
         },
         {
           label: entity2.name,
           data: entity2Data,
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)', // Keep pink color
           borderColor: 'rgba(255, 99, 132, 1)',
           pointBackgroundColor: 'rgba(255, 99, 132, 1)'
         }
@@ -713,7 +713,7 @@ function displayStatComparison() {
         title: {
           display: true,
           text: 'Stat Comparison',
-          color: '#f9fafb'
+          color: '#333333' // Changed to dark text
         },
         tooltip: {
           callbacks: {
@@ -730,24 +730,24 @@ function displayStatComparison() {
         },
         legend: {
           labels: {
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           }
         }
       },
       scales: {
         r: {
           angleLines: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark lines
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid
           },
           pointLabels: {
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           },
           ticks: {
             backdropColor: 'transparent',
-            color: '#f9fafb'
+            color: '#333333' // Changed to dark text
           }
         }
       }
