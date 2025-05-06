@@ -91,4 +91,6 @@ function getDescription(statAbbr) {
   return descriptions[statAbbr] || '';
 }
 
+refresh();
+
 export { refresh, getFullName, getDescription };
