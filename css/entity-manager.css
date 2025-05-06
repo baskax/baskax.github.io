@@ -1,0 +1,73 @@
+/* Entity Manager Styles */
+#entity-manager {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
+.entity-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.5rem;
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #334155;
+  border-radius: 4px;
+}
+
+.entity-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.entity-actions button {
+  background: #374151;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.entity-actions button:hover {
+  background: #4b5563;
+}
+
+.saved-entities {
+  margin-top: 1rem;
+}
+
+#entityList {
+  width: 100%;
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+#entityList option {
+  padding: 0.5rem;
+}
+
+#entityList option:hover {
+  background: #1f2937;
+}
