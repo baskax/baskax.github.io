@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat Simulator - RPG Dev Tool</title>
+  <link rel="stylesheet" href="combat.css">
+</head>
+<body>
+  <header>
+    <h1>RPG Combat Simulator</h1>
+    <nav>
+      <a href="index.html">Stat Calculator</a>
+      <a href="combat.html" class="active">Combat Simulator</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="combat-arena">
+      <div class="entity-selection">
+        <div class="entity-container left-entity">
+          <h2>Combatant 1</h2>
+          <select id="entity1Select" class="entity-select">
+            <option value="">Select Entity</option>
+          </select>
+          
+          <div class="entity-stats" id="entity1Stats">
+            <div class="stat-placeholder">Select an entity to view stats</div>
+          </div>
+        </div>
+        
+        <div class="versus-container">
+          <div class="versus-icon">VS</div>
+          <button id="simulateCombat" class="simulate-btn">Simulate Combat</button>
+          <div class="simulation-controls">
+            <label for="numRounds">Rounds:</label>
+            <input type="number" id="numRounds" min="1" max="100" value="10">
+          </div>
+        </div>
+        
+        <div class="entity-container right-entity">
+          <h2>Combatant 2</h2>
+          <select id="entity2Select" class="entity-select">
+            <option value="">Select Entity</option>
+          </select>
+          
+          <div class="entity-stats" id="entity2Stats">
+            <div class="stat-placeholder">Select an entity to view stats</div>
+          </div>
+        </div>
+      </div>
+      
+      <section class="combat-results" id="combatResults">
+        <h2>Combat Results</h2>
+        <div id="resultsSummary" class="results-summary"></div>
+        
+        <div class="chart-container">
+          <div class="combat-chart-wrapper">
+            <canvas id="combatChart"></canvas>
+          </div>
+          <div class="stat-comparison-wrapper">
+            <canvas id="statComparisonChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="rounds-log">
+          <h3>Combat Log</h3>
+          <div id="combatLog" class="combat-log"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/combat.js"></script>
+</body>
+</html>
