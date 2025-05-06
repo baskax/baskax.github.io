@@ -1,4 +1,4 @@
-// db.js - Database operations for the RPG Stat Calculator
+// db.js - Database operations for the RPG Stat Calculator - FIXED VERSION
 
 // Initialize the database
 const dbPromise = initDatabase();
@@ -51,12 +51,20 @@ async function saveEntity(entity) {
       entity.createdAt = new Date().toISOString();
     }
     
-    // If it has an ID, it's an update; otherwise it's a new entity
-    const request = entity.id ? store.put(entity) : store.add(entity);
+    let request;
+    if (entity.id) {
+      // For existing entities, use put
+      request = store.put(entity);
+    } else {
+      // For new entities, use add
+      request = store.add(entity);
+    }
     
     request.onsuccess = (event) => {
-      // Return the ID if it was a new entity
-      resolve(entity.id || event.target.result);
+      // For new entities, return the generated ID
+      const id = entity.id || event.target.result;
+      console.log(`Entity saved with ID: ${id}`);
+      resolve(id);
     };
     
     request.onerror = (event) => {
@@ -75,6 +83,7 @@ async function getAllEntities() {
     const request = store.getAll();
     
     request.onsuccess = () => {
+      console.log(`Retrieved ${request.result.length} entities`);
       resolve(request.result);
     };
     
@@ -133,6 +142,7 @@ async function deleteEntity(id) {
     const request = store.delete(id);
     
     request.onsuccess = () => {
+      console.log(`Entity with ID ${id} deleted`);
       resolve(true);
     };
     
@@ -202,6 +212,53 @@ async function deleteModifier(id) {
   });
 }
 
+// Clear all data (for debugging or reset)
+async function clearAllData() {
+  const db = await dbPromise;
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['entities', 'modifiers'], 'readwrite');
+    
+    const entityStore = transaction.objectStore('entities');
+    const modifierStore = transaction.objectStore('modifiers');
+    
+    const entityClearRequest = entityStore.clear();
+    const modifierClearRequest = modifierStore.clear();
+    
+    entityClearRequest.onsuccess = () => {
+      console.log('Entities cleared');
+    };
+    
+    modifierClearRequest.onsuccess = () => {
+      console.log('Modifiers cleared');
+    };
+    
+    transaction.oncomplete = () => {
+      console.log('All data cleared successfully');
+      resolve(true);
+    };
+    
+    transaction.onerror = (event) => {
+      console.error('Error clearing data:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// Debug function to list all entities with details
+async function debugListEntities() {
+  try {
+    const entities = await getAllEntities();
+    console.log(`=== Entities in DB (${entities.length}) ===`);
+    entities.forEach(e => {
+      console.log(`ID: ${e.id}, Name: ${e.name}, Type: ${e.type}`);
+    });
+    return entities.length;
+  } catch (err) {
+    console.error('Debug listing failed:', err);
+    return -1;
+  }
+}
+
 // Export to window or as module
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -212,7 +269,9 @@ if (typeof module !== 'undefined' && module.exports) {
     deleteEntity,
     saveModifier,
     getModifiersForEntity,
-    deleteModifier
+    deleteModifier,
+    clearAllData,
+    debugListEntities
   };
 } else {
   window.rpgDB = {
@@ -223,6 +282,8 @@ if (typeof module !== 'undefined' && module.exports) {
     deleteEntity,
     saveModifier,
     getModifiersForEntity,
-    deleteModifier
+    deleteModifier,
+    clearAllData,
+    debugListEntities
   };
 }
