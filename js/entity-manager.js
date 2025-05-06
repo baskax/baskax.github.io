@@ -36,6 +36,8 @@ function addDebugButton() {
   }
 }
 
+// Add this to your saveCurrentEntity function in entity-manager.js
+
 async function saveCurrentEntity() {
   // Get values from the form
   const entityId = document.getElementById('entityId').value;
@@ -55,9 +57,7 @@ async function saveCurrentEntity() {
     return;
   }
   
-  console.log(`Saving entity: ${name} (${type}), ID: ${entityId || 'new'}`);
-  
-  // Create entity object
+  // Create entity object with base stats
   const entity = {
     name,
     type,
@@ -69,23 +69,44 @@ async function saveCurrentEntity() {
     lastModified: new Date().toISOString()
   };
   
+  // Capture calculated stats from the UI
+  // These match your stat definitions from the index page
+  const statsList = ['HP', 'STA', 'ENG', 'PDMG', 'SKDMG', 'ASPD', 'CRIT', 'ARM', 'RES', 'CDR', 'MSPD'];
+  
+  // Find elements with these IDs in the secondary stats table
+  const secTable = document.getElementById('secBody');
+  if (secTable) {
+    const rows = secTable.getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+      const cells = rows[i].getElementsByTagName('td');
+      if (cells.length >= 2) {
+        const statName = cells[0].textContent.trim();
+        const statValue = parseFloat(cells[1].textContent);
+        
+        // Find the corresponding key in our statsList
+        const statKey = statsList.find(s => s === statName);
+        if (statKey) {
+          // Store with lowercase key for consistency
+          entity[statKey.toLowerCase()] = statValue;
+        }
+      }
+    }
+  }
+  
+  console.log('Entity with calculated stats:', entity);
+  
   // If editing an existing entity, add the ID
   if (entityId) {
     entity.id = parseInt(entityId);
-    console.log(`Updating existing entity with ID: ${entity.id}`);
-  } else {
-    console.log('Creating new entity');
   }
   
   try {
     // Save to database
     const id = await rpgDB.saveEntity(entity);
-    console.log(`Entity saved with ID: ${id}`);
     
     // Update the form with the new ID if it was a new entity
     if (!entityId) {
       document.getElementById('entityId').value = id;
-      console.log(`Form updated with new ID: ${id}`);
     }
     
     // Update the entity list
