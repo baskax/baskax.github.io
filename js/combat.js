@@ -1,4 +1,3 @@
-// Combat simulator for RPG Dev Tool
 document.addEventListener('DOMContentLoaded', function() {
   initCombatSimulator();
 });
@@ -7,45 +6,34 @@ let entity1 = null;
 let entity2 = null;
 let combatChart = null;
 let statComparisonChart = null;
+let modifiers = [];
 
 async function initCombatSimulator() {
-  // Set up event listeners
   document.getElementById('simulateCombat').addEventListener('click', runCombatSimulation);
   document.getElementById('entity1Select').addEventListener('change', loadEntityOne);
   document.getElementById('entity2Select').addEventListener('change', loadEntityTwo);
-  
-  // Load entities from database
+  document.getElementById('applyModifierBtn').addEventListener('click', applyModifier);
   await loadEntitiesIntoSelects();
 }
 
 async function loadEntitiesIntoSelects() {
   try {
-    // Get all entities
     const entities = await rpgDB.getAllEntities();
-    
     if (!entities || entities.length === 0) {
       alert('No entities found in the database. Please create some entities in the Stat Calculator first.');
       return;
     }
-    
-    // Get the select elements
     const select1 = document.getElementById('entity1Select');
     const select2 = document.getElementById('entity2Select');
-    
-    // Clear existing options except the first one
     select1.innerHTML = '<option value="">Select Entity</option>';
     select2.innerHTML = '<option value="">Select Entity</option>';
-    
-    // Add entities as options
     entities.forEach(entity => {
       const option1 = document.createElement('option');
       option1.value = entity.id;
       option1.textContent = `${entity.name} (${entity.type})`;
-      
       const option2 = document.createElement('option');
       option2.value = entity.id;
       option2.textContent = `${entity.name} (${entity.type})`;
-      
       select1.appendChild(option1);
       select2.appendChild(option2);
     });
@@ -57,29 +45,22 @@ async function loadEntitiesIntoSelects() {
 
 async function loadEntityOne() {
   const entityId = document.getElementById('entity1Select').value;
-  
   if (!entityId) {
     document.getElementById('entity1Stats').innerHTML = '<div class="stat-placeholder">Select an entity to view stats</div>';
     entity1 = null;
     return;
   }
-  
   try {
-    // Load entity from the database with its base stats
     entity1 = await rpgDB.getEntityById(parseInt(entityId));
-    
     if (!entity1) {
       console.error(`Entity with ID ${entityId} not found.`);
       document.getElementById('entity1Stats').innerHTML = '<div class="stat-placeholder">Entity not found</div>';
       return;
     }
-    
-    // If the entity doesn't have its calculated stats, we need to calculate them
     if (!entity1.hp) {
       console.log("Calculating stats for entity:", entity1);
       entity1 = calculateEntityStats(entity1);
     }
-    
     console.log("Loaded entity 1:", entity1);
     displayEntityStats(entity1, 'entity1Stats');
   } catch (error) {
@@ -90,29 +71,22 @@ async function loadEntityOne() {
 
 async function loadEntityTwo() {
   const entityId = document.getElementById('entity2Select').value;
-  
   if (!entityId) {
     document.getElementById('entity2Stats').innerHTML = '<div class="stat-placeholder">Select an entity to view stats</div>';
     entity2 = null;
     return;
   }
-  
   try {
-    // Load entity from the database with its base stats
     entity2 = await rpgDB.getEntityById(parseInt(entityId));
-    
     if (!entity2) {
       console.error(`Entity with ID ${entityId} not found.`);
       document.getElementById('entity2Stats').innerHTML = '<div class="stat-placeholder">Entity not found</div>';
       return;
     }
-    
-    // If the entity doesn't have its calculated stats, we need to calculate them
     if (!entity2.hp) {
       console.log("Calculating stats for entity:", entity2);
       entity2 = calculateEntityStats(entity2);
     }
-    
     console.log("Loaded entity 2:", entity2);
     displayEntityStats(entity2, 'entity2Stats');
   } catch (error) {
@@ -121,60 +95,28 @@ async function loadEntityTwo() {
   }
 }
 
-// This function calculates all the stats for an entity using your exact formulas
 function calculateEntityStats(entity) {
-  // Make a copy of the entity to avoid modifying the original
   const entityWithStats = { ...entity };
-  
-  // Extract base stats
   const POW = entity.pow;
   const DEX = entity.dex;
   const VIT = entity.vit;
   const FOC = entity.foc;
   const SPR = entity.spr;
-  
-  // Calculate all stats using your formula
-  // This uses the exact same formula from your index page
-  // HP calculation - VIT and SPR
   entityWithStats.hp = calcStatValue('HP', VIT, SPR);
-  
-  // STA calculation - VIT and DEX
   entityWithStats.sta = calcStatValue('STA', VIT, DEX);
-  
-  // ENG calculation - SPR and FOC
   entityWithStats.eng = calcStatValue('ENG', SPR, FOC);
-  
-  // PDMG calculation - POW and DEX
   entityWithStats.pdmg = calcStatValue('PDMG', POW, DEX);
-  
-  // SKDMG calculation - FOC and POW
   entityWithStats.skdmg = calcStatValue('SKDMG', FOC, POW);
-  
-  // ASPD calculation - DEX only
   entityWithStats.aspd = calcStatValue('ASPD', DEX, 0);
-  
-  // CRIT calculation - FOC and DEX
   entityWithStats.crit = calcStatValue('CRIT', FOC, DEX);
-  
-  // ARM calculation - VIT and POW
   entityWithStats.arm = calcStatValue('ARM', VIT, POW);
-  
-  // RES calculation - SPR and VIT
   entityWithStats.res = calcStatValue('RES', SPR, VIT);
-  
-  // CDR calculation - FOC and SPR
   entityWithStats.cdr = calcStatValue('CDR', FOC, SPR);
-  
-  // MSPD calculation - DEX and SPR
   entityWithStats.mspd = calcStatValue('MSPD', DEX, SPR);
-  
   return entityWithStats;
 }
 
-// This implements your exact calcStat function from the index page
 function calcStatValue(name, p1, p2) {
-  // Define default values for each stat's formula parameters
-  // These match your defaults from the index page
   const defaults = {
     'HP': { w1: 1, w2: 0.5, pre: 0, exp: 1.25, mult: 5, post: 0 },
     'STA': { w1: 1, w2: 0.5, pre: 0, exp: 1.15, mult: 4, post: 0 },
@@ -188,24 +130,17 @@ function calcStatValue(name, p1, p2) {
     'CDR': { w1: 1, w2: 0.5, pre: 0, exp: 1.15, mult: 0.1, post: 0 },
     'MSPD': { w1: 1, w2: 0.5, pre: 0, exp: 1.1, mult: 0.1, post: 0 }
   };
-  
-  // Get the formula parameters for this stat
   const params = defaults[name];
-  
-  // Calculate using the exact same formula as your index page
   const base = p1 * params.w1 + p2 * params.w2 + params.pre;
   return Math.pow(base, params.exp) * params.mult + params.post;
 }
 
 function displayEntityStats(entity, containerId) {
   const container = document.getElementById(containerId);
-  
   if (!entity) {
     container.innerHTML = '<div class="stat-placeholder">Entity not found</div>';
     return;
   }
-  
-  // Build HTML to show the entity's stats
   let html = `
     <h3>${entity.name}</h3>
     <div class="stat-group">
@@ -234,11 +169,7 @@ function displayEntityStats(entity, containerId) {
       <span class="stat-value">${entity.spr}</span>
     </div>
   `;
-  
-  // Add calculated stats section
   html += `<h4>Combat Stats</h4>`;
-  
-  // Add each calculated stat with proper formatting
   const statDisplays = {
     hp: { name: 'Health Points', format: '0.0' },
     sta: { name: 'Stamina', format: '0.0' },
@@ -252,23 +183,17 @@ function displayEntityStats(entity, containerId) {
     cdr: { name: 'Cooldown Reduction', format: '0.0', suffix: '%' },
     mspd: { name: 'Movement Speed', format: '0.0', suffix: '%' }
   };
-  
-  // Add each calculated stat if it exists
   for (const [statKey, display] of Object.entries(statDisplays)) {
     if (entity[statKey] !== undefined) {
-      // Format the value based on the format specification
       let value = entity[statKey];
       if (display.format === '0.0') {
         value = value.toFixed(1);
       } else if (display.format === '0.00') {
         value = value.toFixed(2);
       }
-      
-      // Add suffix if specified (like % for crit)
       if (display.suffix) {
         value += display.suffix;
       }
-      
       html += `
       <div class="stat-group">
         <span class="stat-name">${display.name}:</span>
@@ -276,7 +201,6 @@ function displayEntityStats(entity, containerId) {
       </div>`;
     }
   }
-  
   container.innerHTML = html;
 }
 
@@ -285,38 +209,28 @@ function runCombatSimulation() {
     alert('Please select two entities for combat.');
     return;
   }
-  
   const numRounds = parseInt(document.getElementById('numRounds').value) || 10;
-  
-  // Run the simulation
-  const results = simulateCombat(entity1, entity2, numRounds);
-  
-  // Display the results
+  const modifiedEntity1 = applyModifiersToEntity(entity1);
+  const modifiedEntity2 = applyModifiersToEntity(entity2);
+  const results = simulateCombat(modifiedEntity1, modifiedEntity2, numRounds);
   displayCombatResults(results);
-  
-  // Show the results section
   document.getElementById('combatResults').classList.add('visible');
-  
-  // Scroll to results
   document.getElementById('combatResults').scrollIntoView({ behavior: 'smooth' });
 }
 
 function simulateCombat(entity1, entity2, maxRounds) {
-  // Create copies of entities to avoid modifying the originals
   const combatant1 = {
     ...entity1,
     currentHP: entity1.hp,
     currentSTA: entity1.sta,
     currentENG: entity1.eng
   };
-  
   const combatant2 = {
     ...entity2,
     currentHP: entity2.hp,
     currentSTA: entity2.sta,
     currentENG: entity2.eng
   };
-  
   const results = {
     rounds: [],
     winner: null,
@@ -326,31 +240,20 @@ function simulateCombat(entity1, entity2, maxRounds) {
     criticalHits: { [entity1.name]: 0, [entity2.name]: 0 },
     hpHistory: { [entity1.name]: [entity1.hp], [entity2.name]: [entity2.hp] }
   };
-  
-  // Determine who goes first based on attack speed (aspd)
   const entity1First = combatant1.aspd >= combatant2.aspd;
-  
-  // Combat rounds
   for (let round = 1; round <= maxRounds; round++) {
     const roundResult = {
       round,
       actions: []
     };
-    
-    // First entity's turn
     const firstAttacker = entity1First ? combatant1 : combatant2;
     const firstDefender = entity1First ? combatant2 : combatant1;
-    
     const firstAttack = performAttack(firstAttacker, firstDefender, round);
     roundResult.actions.push(firstAttack);
-    
-    // Track damage and crits
     results.totalDamage[firstAttacker.name] += firstAttack.damage;
     if (firstAttack.critical) {
       results.criticalHits[firstAttacker.name]++;
     }
-    
-    // Check if defender is defeated
     if (firstDefender.currentHP <= 0) {
       results.winner = firstAttacker;
       results.winnerName = firstAttacker.name;
@@ -360,18 +263,12 @@ function simulateCombat(entity1, entity2, maxRounds) {
       results.hpHistory[entity2.name].push(combatant2.currentHP);
       break;
     }
-    
-    // Second entity's turn
     const secondAttack = performAttack(firstDefender, firstAttacker, round);
     roundResult.actions.push(secondAttack);
-    
-    // Track damage and crits
     results.totalDamage[firstDefender.name] += secondAttack.damage;
     if (secondAttack.critical) {
       results.criticalHits[firstDefender.name]++;
     }
-    
-    // Check if defender is defeated
     if (firstAttacker.currentHP <= 0) {
       results.winner = firstDefender;
       results.winnerName = firstDefender.name;
@@ -381,30 +278,19 @@ function simulateCombat(entity1, entity2, maxRounds) {
       results.hpHistory[entity2.name].push(combatant2.currentHP);
       break;
     }
-    
-    // Recover stamina and energy after each round
-    const staRecovery = 5;  // Base stamina recovery per round
-    const engRecovery = 3;  // Base energy recovery per round
-    
+    const staRecovery = 5;
+    const engRecovery = 3;
     combatant1.currentSTA = Math.min(combatant1.sta, combatant1.currentSTA + staRecovery);
     combatant2.currentSTA = Math.min(combatant2.sta, combatant2.currentSTA + staRecovery);
-    
     combatant1.currentENG = Math.min(combatant1.eng, combatant1.currentENG + engRecovery);
     combatant2.currentENG = Math.min(combatant2.eng, combatant2.currentENG + engRecovery);
-    
-    // Add round result to results
     results.rounds.push(roundResult);
-    
-    // Track HP history for the chart
     results.hpHistory[entity1.name].push(combatant1.currentHP);
     results.hpHistory[entity2.name].push(combatant2.currentHP);
   }
-  
-  // If we reached max rounds with no winner, determine by HP percentage
   if (!results.winner) {
     const hp1Percent = combatant1.currentHP / combatant1.hp;
     const hp2Percent = combatant2.currentHP / combatant2.hp;
-    
     if (hp1Percent > hp2Percent) {
       results.winner = combatant1;
       results.winnerName = combatant1.name;
@@ -414,7 +300,6 @@ function simulateCombat(entity1, entity2, maxRounds) {
       results.winnerName = combatant2.name;
       results.loserName = combatant1.name;
     } else {
-      // It's a tie, determine by total damage dealt
       if (results.totalDamage[combatant1.name] > results.totalDamage[combatant2.name]) {
         results.winner = combatant1;
         results.winnerName = combatant1.name;
@@ -426,15 +311,11 @@ function simulateCombat(entity1, entity2, maxRounds) {
       }
     }
   }
-  
   return results;
 }
 
 function performAttack(attacker, defender, round) {
-  // Determine attack type based on available resources
   let attackType, attackName, attackDescription, damage, resourceUsed;
-  
-  // Physical attack if stamina is available
   if (attacker.currentSTA >= 10) {
     attackType = 'physical';
     attackName = 'Physical Attack';
@@ -442,57 +323,35 @@ function performAttack(attacker, defender, round) {
     damage = calculatePhysicalDamage(attacker.pdmg, defender.arm);
     attacker.currentSTA -= 10;
     resourceUsed = 'STA';
-  }
-  // Skill attack if energy is available
-  else if (attacker.currentENG >= 15) {
+  } else if (attacker.currentENG >= 15) {
     attackType = 'skill';
     attackName = 'Skill Attack';
     attackDescription = `${attacker.name} uses a skill on ${defender.name}`;
     damage = calculateSkillDamage(attacker.skdmg, defender.res);
     attacker.currentENG -= 15;
     resourceUsed = 'ENG';
-  }
-  // Weak attack if no resources
-  else {
+  } else {
     attackType = 'weak';
     attackName = 'Weak Attack';
     attackDescription = `${attacker.name} makes a weak attack against ${defender.name}`;
     damage = calculatePhysicalDamage(attacker.pdmg * 0.5, defender.arm);
     resourceUsed = 'None';
   }
-  
-  // Add randomness (90% - 110% of calculated damage)
   damage = damage * (0.9 + Math.random() * 0.2);
-  
-  // Check for critical hit using crit rate
   const critical = Math.random() * 100 < attacker.crit;
-  
-  // Apply critical damage bonus
   if (critical) {
     damage *= 1.5;
   }
-  
-  // Add slight round bonus to escalate damage over time
   damage *= (1 + round * 0.01);
-  
-  // Apply attack speed modifier to damage for sustained DPS balancing
-  // Higher attack speed = slightly more DPS
   damage *= (attacker.aspd / 1.5);
-  
-  // Ensure minimum damage
   damage = Math.max(1, Math.floor(damage));
-  
-  // Apply damage
   defender.currentHP -= damage;
   defender.currentHP = Math.max(0, defender.currentHP);
-  
-  // Generate description
   let desc = `${attackDescription}`;
   if (critical) {
     desc += ` (CRITICAL HIT!)`;
   }
   desc += ` for ${damage} damage`;
-  
   return {
     attacker: attacker.name,
     defender: defender.name,
@@ -506,25 +365,19 @@ function performAttack(attacker, defender, round) {
   };
 }
 
-// Calculate physical damage using proper damage formulas
 function calculatePhysicalDamage(attackValue, defenseValue) {
-  // Apply diminishing returns on armor to prevent tanks being invincible
   const damageReduction = defenseValue / (defenseValue + 50);
   return attackValue * (1 - damageReduction);
 }
 
-// Calculate skill damage using proper damage formulas
 function calculateSkillDamage(attackValue, defenseValue) {
-  // Skills are slightly more effective against resistance
   const damageReduction = defenseValue / (defenseValue + 75);
   return attackValue * (1 - damageReduction);
 }
 
 function displayCombatResults(results) {
-  // Display summary
   const summaryDiv = document.getElementById('resultsSummary');
   const rounds = results.rounds.length;
-  
   if (results.winner) {
     summaryDiv.innerHTML = `
       <p><span class="winner">${results.winnerName}</span> defeated ${results.loserName} in ${rounds} round${rounds > 1 ? 's' : ''}!</p>
@@ -538,17 +391,12 @@ function displayCombatResults(results) {
       <p>Critical hits: ${entity1.name}: ${results.criticalHits[entity1.name]} | ${entity2.name}: ${results.criticalHits[entity2.name]}</p>
     `;
   }
-  
-  // Display combat log
   const logDiv = document.getElementById('combatLog');
   logDiv.innerHTML = '';
-  
   results.rounds.forEach(round => {
     const roundDiv = document.createElement('div');
     roundDiv.className = 'round-entry';
-    
     let roundHtml = `<div class="round-title">Round ${round.round}</div>`;
-    
     round.actions.forEach(action => {
       roundHtml += `<div class="attack">
         ${action.critical ? '<span class="critical">CRITICAL! </span>' : ''}
@@ -556,34 +404,24 @@ function displayCombatResults(results) {
         <span class="health">${action.defender} HP: ${Math.max(0, action.defenderHP).toFixed(0)}/${action.defenderMaxHP.toFixed(0)}</span>
       </div>`;
     });
-    
     roundDiv.innerHTML = roundHtml;
     logDiv.appendChild(roundDiv);
   });
-  
-  // Display HP over time chart
   displayHPChart(results);
-  
-  // Display stat comparison chart
   displayStatComparison();
 }
 
 function displayHPChart(results) {
   const ctx = document.getElementById('combatChart').getContext('2d');
-  
-  // Destroy previous chart if it exists
   if (combatChart) {
     combatChart.destroy();
   }
-  
   const labels = [];
   for (let i = 0; i <= results.rounds.length; i++) {
     labels.push(`Round ${i}`);
   }
-  
   const entity1Name = entity1.name;
   const entity2Name = entity2.name;
-  
   combatChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -592,7 +430,7 @@ function displayHPChart(results) {
         {
           label: `${entity1Name} HP`,
           data: results.hpHistory[entity1Name],
-          borderColor: 'rgba(75, 192, 192, 1)', // Teal color - keep this
+          borderColor: 'rgba(75, 192, 192, 1)',
           backgroundColor: 'rgba(75, 192, 192, 0.2)',
           tension: 0.1,
           fill: true
@@ -600,7 +438,7 @@ function displayHPChart(results) {
         {
           label: `${entity2Name} HP`,
           data: results.hpHistory[entity2Name],
-          borderColor: 'rgba(255, 99, 132, 1)', // Pink color - keep this
+          borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
           tension: 0.1,
           fill: true
@@ -614,30 +452,30 @@ function displayHPChart(results) {
         title: {
           display: true,
           text: 'HP over Combat Rounds',
-          color: '#333333' // Changed to dark text
+          color: '#333333'
         },
         legend: {
           labels: {
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           }
         }
       },
       scales: {
         x: {
           ticks: {
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid lines
+            color: 'rgba(0, 0, 0, 0.1)'
           }
         },
         y: {
           beginAtZero: true,
           ticks: {
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid lines
+            color: 'rgba(0, 0, 0, 0.1)'
           }
         }
       }
@@ -647,13 +485,9 @@ function displayHPChart(results) {
 
 function displayStatComparison() {
   const ctx = document.getElementById('statComparisonChart').getContext('2d');
-  
-  // Destroy previous chart if it exists
   if (statComparisonChart) {
     statComparisonChart.destroy();
   }
-  
-  // Define which stats to compare
   const statsToCompare = [
     { key: 'pdmg', label: 'Physical DMG' },
     { key: 'skdmg', label: 'Skill DMG' },
@@ -663,28 +497,19 @@ function displayStatComparison() {
     { key: 'aspd', label: 'Attack Speed' },
     { key: 'crit', label: 'Critical Rate' }
   ];
-  
-  // Prepare labels and datasets
   const labels = statsToCompare.map(s => s.label);
-  
-  // Find maximum values for normalization
   const maxValues = {};
   statsToCompare.forEach(stat => {
     maxValues[stat.key] = Math.max(entity1[stat.key] || 0, entity2[stat.key] || 0);
   });
-  
-  // Normalize values for better visualization (0-100 scale)
   const entity1Data = statsToCompare.map(stat => {
     const maxVal = maxValues[stat.key];
     return maxVal > 0 ? (entity1[stat.key] / maxVal) * 100 : 0;
   });
-  
   const entity2Data = statsToCompare.map(stat => {
     const maxVal = maxValues[stat.key];
     return maxVal > 0 ? (entity2[stat.key] / maxVal) * 100 : 0;
   });
-  
-  // Create radar chart
   statComparisonChart = new Chart(ctx, {
     type: 'radar',
     data: {
@@ -693,14 +518,14 @@ function displayStatComparison() {
         {
           label: entity1.name,
           data: entity1Data,
-          backgroundColor: 'rgba(75, 192, 192, 0.2)', // Keep teal color
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
           borderColor: 'rgba(75, 192, 192, 1)',
           pointBackgroundColor: 'rgba(75, 192, 192, 1)'
         },
         {
           label: entity2.name,
           data: entity2Data,
-          backgroundColor: 'rgba(255, 99, 132, 0.2)', // Keep pink color
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
           borderColor: 'rgba(255, 99, 132, 1)',
           pointBackgroundColor: 'rgba(255, 99, 132, 1)'
         }
@@ -713,7 +538,7 @@ function displayStatComparison() {
         title: {
           display: true,
           text: 'Stat Comparison',
-          color: '#333333' // Changed to dark text
+          color: '#333333'
         },
         tooltip: {
           callbacks: {
@@ -730,27 +555,62 @@ function displayStatComparison() {
         },
         legend: {
           labels: {
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           }
         }
       },
       scales: {
         r: {
           angleLines: {
-            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark lines
+            color: 'rgba(0, 0, 0, 0.1)'
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.1)' // Changed to dark grid
+            color: 'rgba(0, 0, 0, 0.1)'
           },
           pointLabels: {
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           },
           ticks: {
             backdropColor: 'transparent',
-            color: '#333333' // Changed to dark text
+            color: '#333333'
           }
         }
       }
     }
   });
+}
+
+function applyModifier() {
+  const operation = document.getElementById('modifierOperation').value;
+  const type = document.getElementById('modifierType').value;
+  const stat = document.getElementById('modifierStat').value;
+  const value = parseFloat(document.getElementById('modifierValue').value);
+  if (isNaN(value)) {
+    alert('Please enter a valid value for the modifier.');
+    return;
+  }
+  const modifier = { operation, type, stat, value };
+  modifiers.push(modifier);
+  console.log('Applied modifier:', modifier);
+}
+
+function applyModifiersToEntity(entity) {
+  const modifiedEntity = { ...entity };
+  modifiers.forEach(modifier => {
+    const { operation, type, stat, value } = modifier;
+    if (type === 'flat') {
+      if (operation === '+') {
+        modifiedEntity[stat] += value;
+      } else if (operation === '-') {
+        modifiedEntity[stat] -= value;
+      }
+    } else if (type === 'percent') {
+      if (operation === '+') {
+        modifiedEntity[stat] *= (1 + value / 100);
+      } else if (operation === '-') {
+        modifiedEntity[stat] *= (1 - value / 100);
+      }
+    }
+  });
+  return modifiedEntity;
 }

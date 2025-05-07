@@ -49,6 +49,40 @@
           </div>
         </div>
       </div>
+
+      <!-- P87b3 -->
+      <div class="modifier-container">
+        <h3>Stat Modifiers</h3>
+        <form id="modifierForm">
+          <!-- Pe339 -->
+          <div class="modifier-group">
+            <select id="modifierOperation">
+              <option value="+">+</option>
+              <option value="-">-</option>
+            </select>
+            <select id="modifierType">
+              <option value="flat">Flat</option>
+              <option value="percent">Percent</option>
+            </select>
+            <select id="modifierStat">
+              <option value="hp">HP</option>
+              <option value="sta">Stamina</option>
+              <option value="eng">Energy</option>
+              <option value="pdmg">Physical Damage</option>
+              <option value="skdmg">Skill Damage</option>
+              <option value="aspd">Attack Speed</option>
+              <option value="crit">Critical Rate</option>
+              <option value="arm">Armor</option>
+              <option value="res">Resistance</option>
+              <option value="cdr">Cooldown Reduction</option>
+              <option value="mspd">Movement Speed</option>
+            </select>
+            <input type="number" id="modifierValue" placeholder="Value">
+          </div>
+          <!-- Pc88f -->
+          <button type="button" id="applyModifierBtn">Apply Modifier</button>
+        </form>
+      </div>
       
       <section class="combat-results" id="combatResults">
         <h2>Combat Results</h2>
