@@ -50,11 +50,9 @@
         </div>
       </div>
 
-      <!-- P87b3 -->
       <div class="modifier-container">
         <h3>Stat Modifiers</h3>
         <form id="modifierForm">
-          <!-- Pe339 -->
           <div class="modifier-group">
             <select id="modifierOperation">
               <option value="+">+</option>
@@ -79,9 +77,20 @@
             </select>
             <input type="number" id="modifierValue" placeholder="Value">
           </div>
-          <!-- Pc88f -->
           <button type="button" id="applyModifierBtn">Apply Modifier</button>
         </form>
+      </div>
+
+      <div class="applied-modifiers">
+        <h3>Applied Modifiers</h3>
+        <div id="appliedModifiers1">
+          <h4>Combatant 1</h4>
+          <ul id="modifiersList1"></ul>
+        </div>
+        <div id="appliedModifiers2">
+          <h4>Combatant 2</h4>
+          <ul id="modifiersList2"></ul>
+        </div>
       </div>
       
       <section class="combat-results" id="combatResults">

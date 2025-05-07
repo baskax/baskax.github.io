@@ -305,3 +305,28 @@ main {
 #applyModifierBtn:hover {
   background-color: #2563eb;
 }
+
+/* Styles for displaying applied modifiers */
+.applied-modifiers {
+  background-color: var(--primary-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.applied-modifiers h4 {
+  margin-bottom: 0.5rem;
+}
+
+.applied-modifiers ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.applied-modifiers li {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}

@@ -6,7 +6,8 @@ let entity1 = null;
 let entity2 = null;
 let combatChart = null;
 let statComparisonChart = null;
-let modifiers = [];
+let modifiers1 = [];
+let modifiers2 = [];
 
 async function initCombatSimulator() {
   document.getElementById('simulateCombat').addEventListener('click', runCombatSimulation);
@@ -210,8 +211,8 @@ function runCombatSimulation() {
     return;
   }
   const numRounds = parseInt(document.getElementById('numRounds').value) || 10;
-  const modifiedEntity1 = applyModifiersToEntity(entity1);
-  const modifiedEntity2 = applyModifiersToEntity(entity2);
+  const modifiedEntity1 = applyModifiersToEntity(entity1, modifiers1);
+  const modifiedEntity2 = applyModifiersToEntity(entity2, modifiers2);
   const results = simulateCombat(modifiedEntity1, modifiedEntity2, numRounds);
   displayCombatResults(results);
   document.getElementById('combatResults').classList.add('visible');
@@ -590,11 +591,28 @@ function applyModifier() {
     return;
   }
   const modifier = { operation, type, stat, value };
-  modifiers.push(modifier);
+  const selectedEntity = document.querySelector('input[name="entitySelect"]:checked').value;
+  if (selectedEntity === 'entity1') {
+    modifiers1.push(modifier);
+    displayAppliedModifiers(modifiers1, 'modifiersList1');
+  } else if (selectedEntity === 'entity2') {
+    modifiers2.push(modifier);
+    displayAppliedModifiers(modifiers2, 'modifiersList2');
+  }
   console.log('Applied modifier:', modifier);
 }
 
-function applyModifiersToEntity(entity) {
+function displayAppliedModifiers(modifiers, listId) {
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  modifiers.forEach(modifier => {
+    const listItem = document.createElement('li');
+    listItem.textContent = `${modifier.operation}${modifier.type === 'percent' ? '%' : ''} ${modifier.value} ${modifier.stat.toUpperCase()}`;
+    list.appendChild(listItem);
+  });
+}
+
+function applyModifiersToEntity(entity, modifiers) {
   const modifiedEntity = { ...entity };
   modifiers.forEach(modifier => {
     const { operation, type, stat, value } = modifier;
