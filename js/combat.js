@@ -402,7 +402,7 @@ function displayCombatResults(results) {
       roundHtml += `<div class="attack">
         ${action.critical ? '<span class="critical">CRITICAL! </span>' : ''}
         ${action.description}. 
-        <span class="health">${action.defender} HP: ${Math.max(0, action.defenderHP).toFixed(0)}/${action.defenderMaxHP.toFixed(0)}</span>
+        <span class="health">${Math.max(0, action.defenderHP).toFixed(0)}/${action.defenderMaxHP.toFixed(0)}</span>
       </div>`;
     });
     roundDiv.innerHTML = roundHtml;
