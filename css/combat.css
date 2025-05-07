@@ -18,7 +18,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Arial', sans-serif;
   background-color: var(--primary-bg);
   color: var(--text-color);
   line-height: 1.6;
@@ -95,6 +95,8 @@ main {
   border-radius: 6px;
   padding: 1rem;
   min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-placeholder {
@@ -107,6 +109,8 @@ main {
 }
 
 .stat-group {
+  display: flex;
+  justify-content: space-between;
   margin-bottom: 0.5rem;
 }
 
